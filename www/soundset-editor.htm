@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <link rel="stylesheet" href="/css/main.css" type="text/css" />
+
+        <style>
+            .url-input {width: 300px;}
+            /*button {width: 100%; height: 40px; background-color: blue;}*/
+            textarea {width: 400px; height: 100px;}
+
+            #drop-zone {
+                border:2px dashed #808080;
+                padding: 30px;
+                margin: 20px;
+                text-align: center;
+            }
+            .drop-zone-hover {
+                background-color:#DDDDFF;
+                border:2px dotted #808080 !important;
+            }
+
+            .search-thing-menu {
+                cursor: pointer;
+                margin:4px;
+                display:inline-block;
+                float:right;
+            }
+
+            .search-thing-menu:hover {
+                border-radius: 2px;
+                border: 1px solid #808080;
+                margin:3px;
+            }
+
+        </style>
+
+    </head>
+    <body>
+
+        <header>
+            <a class="main-page-link" href="/index.htm">
+                <span class="main-title-open">Open</span><span class="main-title-media">Media</span><span class="main-title-gallery">.Gallery</span>
+            </a>
+            <div class="title-bar-user-controls"></div>
+        </header>
+
+        <div class="main-body">
+
+            <h1>Add/Edit a Sound Set</h1>
+
+            <div id="drop-zone">
+                    Drop Files Here To Upload
+            </div>    
+
+
+            Sound Set Name: 
+            <br>
+            <input id="soundset-name">
+
+            <br>
+            Default Surface: <select id="default-surface">
+                <option value="PRESET_VERTICAL">Vertical</option>
+                <option value="PRESET_FRETBOARD">Fretboard</option>
+                <option value="PRESET_SEQUENCER">Sequencer</option>
+            </select>
+            Chromatic <input type="checkbox" id="chromatic-checkbox"> 
+            Bottom Note:             
+            <select id="bottom-note-select">
+		<option>A0</option>	<option>Bb0</option>	<option>B0</option>	<option>C1</option>
+		<option>C#1</option>	<option>D1</option>	<option>Eb1</option>	<option>E1</option>
+		<option>F1</option>	<option>F#1</option>	<option>G1</option>	<option>G#1</option>
+		<option>A1</option>	<option>Bb1</option>	<option>B1</option>	<option>C2</option>
+		<option>C#2</option>	<option>D2</option>	<option>Eb2</option>	<option>E2</option>
+		<option>F2</option>	<option>F#2</option>	<option>G2</option>	<option>G#2</option>
+		<option>A2</option>	<option>Bb2</option>	<option>B2</option>	<option>C3</option>
+		<option>C#3</option>	<option>D3</option>	<option>Eb3</option>	<option>E3</option>
+		<option>F3</option>	<option>F#3</option>	<option>G3</option>	<option>G#3</option>
+		<option>A3</option>	<option>Bb3</option>	<option>B3</option>	<option>C4</option>
+		<option>C#4</option>	<option>D4</option>	<option>Eb4</option>	<option>E4</option>
+		<option>F4</option>	<option>F#4</option>	<option>G4</option>	<option>G#4</option>
+		<option>A4</option>	<option>Bb4</option>	<option>B4</option>	<option>C5</option>
+		<option>C#5</option>	<option>D5</option>	<option>Eb5</option>	<option>E5</option>
+		<option>F5</option>	<option>F#5</option>	<option>G5</option>	<option>G#5</option>
+		<option>A5</option>	<option>Bb5</option>	<option>B5</option>	<option selected="selected">C6</option>
+		<option>C#6</option>	<option>D6</option>	<option>Eb6</option>	<option>E6</option>
+		<option>F6</option>	<option>F#6</option>	<option>G6</option>	<option>G#6</option>
+		<option>A6</option>	<option>Bb6</option>	<option>B6</option>	<option>C7</option>
+		<option>C#7</option>	<option>D7</option>	<option>Eb7</option>	<option>E7</option>
+		<option>F7</option>	<option>F#7</option>	<option>G7</option>	<option>G#7</option>
+		<option>A7</option>	<option>Bb7</option>	<option>B7</option>	<option>C8</option>
+            </select>
+
+            <br>
+            URL Prefix <input id="url-prefix">
+            URL Postfix <input id="url-postfix">
+
+
+            <hr>
+            <div id="inputs">
+            </div>
+
+            <a href="#" id="add-sound">Add Sound</a>
+            <hr>
+
+            <button class="main-create-something" id="submit-button">Submit Sound Set</button>
+
+        </div>
+
+        <script src="/js/usercontrols.js"></script>
+
+        <script src="/js/omgservice.js"></script>    
+
+
+        <script>
+var inputsDiv = document.getElementById("inputs")
+var inputs = {name: document.getElementById("soundset-name"),
+    data: [],
+    chromatic: document.getElementById("chromatic-checkbox"),
+    lowNote: document.getElementById("bottom-note-select"),
+    defaultSurface: document.getElementById("default-surface"),
+    prefix: document.getElementById("url-prefix"),
+    postfix: document.getElementById("url-postfix")
+};
+var soundset = {data: []}
+soundset.type= "SOUNDSET"
+soundset.omgVersion = 1
+var autoPrefix
+var params = omg.util.getPageParams();
+
+var setupPage = () => {
+    if (params.id) {
+        autoPrefix = "/uploads/" + omg.user.id + "/" + params.id + "/"
+        omg.server.getId(params.id, function (response) {
+
+            setInputs(response)
+
+            var newDiv;
+            soundset = response
+        });
+    }
+}
+
+var setInputs = (data) => {
+    inputs.name.value = data.name
+    inputs.chromatic.checked = data.chromatic
+    inputs.lowNote.selectedIndex = data.lowNote - 9
+    inputs.defaultSurface.value = data.defaultSurface
+    inputs.prefix.value = data.prefix || ""
+    inputs.postfix.value = data.postfix || ""
+
+    setList(data)
+}
+
+var setList = (data) => {
+    inputsDiv.innerHTML = ""
+    inputs.data = []
+    for (var i = 0; i < data.data.length; i++) {
+        makeListItem(data.data[i])
+    }
+
+}
+
+var getInputs = () => {
+    soundset.name = document.getElementById("soundset-name").value
+    soundset.chromatic = document.getElementById("chromatic-checkbox").checked
+    soundset.lowNote = document.getElementById("bottom-note-select").selectedIndex + 9
+    soundset.defaultSurface = document.getElementById("default-surface").value
+    soundset.prefix = document.getElementById("url-prefix").value
+    soundset.postfix = document.getElementById("url-postfix").value
+}
+
+var makeListItem = (data) => {
+    var div = document.createElement("div")
+    div.innerHTML = "Sound " + (inputs.data.length + 1) + " Name: "
+    var nameInput = document.createElement("input")
+    nameInput.value = data.name
+    div.appendChild(nameInput)
+    var caption = document.createElement("span")
+    caption.innerHTML = "URL: "
+    div.appendChild(caption)
+    var urlInput = document.createElement("input")
+    urlInput.value = data.url
+    div.appendChild(urlInput)
+    inputsDiv.appendChild(div)
+    var statusDiv = document.createElement("span")
+    div.appendChild(statusDiv)
+
+    urlInput.addEventListener("paste", function (e) {
+        if (nameInput.value.length == 0) {
+
+            var filename;
+            filename = e.clipboardData.getData("Text");
+
+             nameInput.value = makeSoundName(filename)
+             data.name = nameInput.value
+        }
+    }, false);
+    urlInput.onchange = ()=>data.url = urlInput.value
+    nameInput.onchange = ()=>data.name = nameInput.value
+
+    var el = document.createElement("div")
+    el.innerHTML = "&times;"
+    el.className = "search-thing-menu"
+    div.appendChild(el)
+    el.onclick = (e) => {
+        e.stopPropagation()
+        remove(data)
+    }
+
+    el = document.createElement("div")
+    el.innerHTML = "&darr;"
+    el.className = "search-thing-menu"
+    div.appendChild(el)
+    el.onclick = (e) => {
+        e.stopPropagation()
+        moveDown(data)
+    }
+
+    el = document.createElement("div")
+    el.innerHTML = "&uarr;"
+    el.className = "search-thing-menu"
+    div.appendChild(el)
+    el.onclick = (e) => {
+        e.stopPropagation()
+        moveUp(data)
+    }
+
+    inputs.data.push({nameInput: nameInput, urlInput, urlInput})
+    return statusDiv
+}
+
+document.getElementById("add-sound").onclick = ()=>{
+    var newData = {url:"",name:""}
+    makeListItem(newData)
+    soundset.data.push(newData)
+}
+
+var makeSoundName = (filename) => {
+    return filename.split("/").pop().split(".")[0].replace("_", " ").replace("-", " ")
+}
+
+var dropZone = document.getElementById("drop-zone")
+dropZone.ondragover = (e) => {
+    e.preventDefault()
+    dropZone.className = "drop-zone-hover"
+}
+dropZone.ondragleave = (e) => {
+    e.preventDefault()
+    dropZone.className = ""
+}
+dropZone.ondrop = (e) => {
+    e.preventDefault()
+    var handleDroppedItems = (items) => {
+        for (var i = 0; i < e.dataTransfer.items.length; i++) {
+            if (e.dataTransfer.items[i].kind === "file" && 
+                    e.dataTransfer.items[i].type.startsWith("audio/")) {
+                handleDroppedItem(e.dataTransfer.items[i])
+            }
+        }
+    }
+    dropZone.className = ""
+
+    var handleDroppedItem = (item) => {
+        var file = item.getAsFile()
+        var sound = {url: file.name, name: makeSoundName(file.name)}
+        if (inputs.prefix.value !== autoPrefix) {
+            sound.url = autoPrefix + sound.url
+        }
+        var statusDiv = makeListItem(sound)
+        statusDiv.innerHTML = "Uploading..."
+        soundset.data.push(sound)
+
+        var fd = new FormData();
+        fd.append('setId', soundset.id);
+        fd.append('file', file);
+        fd.append('filename', file.name);
+        omg.server.postHTTP("/upload", fd, (res)=>{
+            statusDiv.innerHTML = res.success ? 
+                "<font color='green'>Uploaded</font>" : ("<font color='red'>Error</font> " + res.error)
+        });
+    }
+
+    if (e.dataTransfer.items) {
+        if (soundset.id) {
+            handleDroppedItems(e.dataTransfer.items)
+        }
+        else {
+            soundset.draft = true
+            submit((res) => {
+                soundset.user_id = res.user_id;
+                soundset.username = res.username;
+
+                autoPrefix = window.location.origin + "/uploads/" + omg.user.id + "/" + soundset.id + "/"
+                if (!inputs.prefix.value) {
+                    inputs.prefix.value = autoPrefix
+                    soundset.prefix = autoPrefix
+                }
+                handleDroppedItems(e.dataTransfer.items)
+            })
+        }
+    }
+}
+
+document.getElementById("submit-button").onclick = function () {
+    if (!inputs.name.value || soundset.data.length == 0) {
+        alert("SoundSet needs a name, and a sound with a caption and url.")
+        return
+    }
+
+    delete soundset.draft
+
+    submit((res)=>{
+        if (res.id > 0) {
+            window.location = "soundset.htm?id=" + res.id;
+        }
+    })
+}
+
+var submit = (cb) => {
+    getInputs()
+    
+    omg.server.post(soundset, function (response) {
+        if (response.id) {
+            soundset.id = response.id
+
+        }
+        if (cb) {
+            cb(response)
+        }
+    });
+};
+
+var moveUp = function (item) {
+
+    var i = soundset.data.indexOf(item) 
+    if (i < 1) {
+        return
+    }
+
+    soundset.data.splice(i, 1)
+    soundset.data.splice(i - 1, 0, item)
+
+    setList(soundset)
+}
+
+var moveDown = function (item) {
+
+    var i = soundset.data.indexOf(item) 
+    if (i > -1 && i > soundset.data.length - 1) {
+        return
+    }
+
+    soundset.data.splice(i, 1)
+    soundset.data.splice(i + 1, 0, item)
+
+    setList(soundset)
+}
+
+var remove = function (item) {
+
+    var i = soundset.data.indexOf(item) 
+    if (i == -1) {
+        return
+    }
+
+    soundset.data.splice(i, 1)
+
+    setList(soundset)
+}
+        </script>
+
+
+
+        <script>
+            omg.server.getUser(user => {
+                if (!user) {
+                    window.location = "/signin.htm?fwd=" + encodeURIComponent(window.location.href)
+                }
+                else {
+                    setupPage()
+                }
+            })
+        </script>
+
+    </body>
+</html>
